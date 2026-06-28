@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - CareerTrack PMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="fas fa-chart-line"></i> Placement Analytics</h2>
+    
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary" id="placementRate">-</h3>
+                    <p class="text-muted">Placement Rate</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success" id="avgPackage">-</h3>
+                    <p class="text-muted">Avg Package (LPA)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-warning" id="highestPackage">-</h3>
+                    <p class="text-muted">Highest Package (LPA)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info" id="totalCompanies">-</h3>
+                    <p class="text-muted">Companies</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Charts -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Top Companies by Placements</h5>
+                </div>
+                <div class="card-body">
+                    <div id="topCompanies">Loading...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Department-wise Placement</h5>
+                </div>
+                <div class="card-body">
+                    <div id="deptWise">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Applications Status Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div id="appStatus">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadAnalytics() {
+    const user = await checkAuth();
+    if (!user) {
+        window.location.href = '/login';
+        return;
+    }
+    
+    try {
+        // Load placement stats
+        const placementResponse = await apiCall('/analytics/placement-stats');
+        const placementStats = await placementResponse.json();
+        
+        document.getElementById('placementRate').textContent = placementStats.placement_percentage + '%';
+        document.getElementById('avgPackage').textContent = '₹' + placementStats.average_package;
+        document.getElementById('highestPackage').textContent = '₹' + placementStats.highest_package;
+        document.getElementById('totalCompanies').textContent = placementStats.top_companies.length;
+        
+        // Display top companies
+        const topCompaniesHtml = placementStats.top_companies.length > 0 ? `
+            <ul class="list-group">
+                ${placementStats.top_companies.map(c => `
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        ${c.CompanyName}
+                        <span class="badge bg-primary rounded-pill">${c.placement_count}</span>
+                    </li>
+                `).join('')}
+            </ul>
+        ` : '<p class="text-muted">No data available</p>';
+        
+        document.getElementById('topCompanies').innerHTML = topCompaniesHtml;
+        
+        // Display department-wise stats
+        const deptWiseHtml = placementStats.department_wise.length > 0 ? `
+            <ul class="list-group">
+                ${placementStats.department_wise.map(d => {
+                    const percentage = d.total_students > 0 ? 
+                        Math.round((d.placed_students / d.total_students) * 100) : 0;
+                    return `
+                        <li class="list-group-item">
+                            <div class="d-flex justify-content-between">
+                                <span>${d.DeptName}</span>
+                                <span>${d.placed_students}/${d.total_students} (${percentage}%)</span>
+                            </div>
+                            <div class="progress mt-2" style="height: 20px;">
+                                <div class="progress-bar" role="progressbar" style="width: ${percentage}%">
+                                    ${percentage}%
+                                </div>
+                            </div>
+                        </li>
+                    `;
+                }).join('')}
+            </ul>
+        ` : '<p class="text-muted">No data available</p>';
+        
+        document.getElementById('deptWise').innerHTML = deptWiseHtml;
+        
+        // Load job stats
+        const jobResponse = await apiCall('/analytics/job-stats');
+        const jobStats = await jobResponse.json();
+        
+        // Display application status
+        const appStatusHtml = jobStats.applications_by_status.length > 0 ? `
+            <div class="row">
+                ${jobStats.applications_by_status.map(s => `
+                    <div class="col-md-2">
+                        <div class="text-center p-3 border rounded">
+                            <h4>${s.count}</h4>
+                            <p class="mb-0">${s.Status}</p>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        ` : '<p class="text-muted">No data available</p>';
+        
+        document.getElementById('appStatus').innerHTML = appStatusHtml;
+        
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadAnalytics);
+</script>
+{% endblock %}

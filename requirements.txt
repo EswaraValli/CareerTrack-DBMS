@@ -1,0 +1,19 @@
+# CareerTrack PMS — Module B Dependencies
+# Install with: pip install -r requirements.txt
+
+# Flask backend
+Flask==3.0.0
+Flask-CORS==4.0.0
+
+# HTTP testing
+requests>=2.31.0
+
+# Load testing (optional — for locust_tests/locustfile.py)
+locust>=2.20.0
+
+# Results visualization (optional — for results_visualizer.py)
+matplotlib>=3.8.0
+numpy>=1.26.0
+
+# Data processing (used by generate_report.py)
+pandas>=2.1.0

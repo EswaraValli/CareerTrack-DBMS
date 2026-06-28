@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Members - CareerTrack PMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="fas fa-users"></i> Member Portfolio</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="membersTable">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Department</th>
+                            <th>CGPA</th>
+                            <th>Year</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="membersBody">
+                        <tr><td colspan="7" class="text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadMembers() {
+    try {
+        const response = await apiCall('/students/');
+        if (!response.ok) throw new Error('Failed to load members');
+        
+        const students = await response.json();
+        const tbody = document.getElementById('membersBody');
+        
+        if (students.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No members found</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = students.map(s => `
+            <tr>
+                <td><strong>${s.Name}</strong></td>
+                <td>${s.Email}</td>
+                <td>${s.DeptName || 'N/A'}</td>
+                <td><span class="badge bg-info">${s.CGPA}</span></td>
+                <td>${s.GraduationYear}</td>
+                <td>${s.IsPlaced ? '<span class="badge bg-success">Placed</span>' : '<span class="badge bg-warning">Not Placed</span>'}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="viewStudent(${s.StudentID})">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading members:', error);
+        document.getElementById('membersBody').innerHTML = 
+            '<tr><td colspan="7" class="text-center text-danger">Error loading members</td></tr>';
+    }
+}
+
+async function viewStudent(id) {
+    try {
+        const response = await apiCall(`/students/${id}`);
+        const student = await response.json();
+        
+        alert(JSON.stringify(student, null, 2));
+    } catch (error) {
+        alert('Error viewing student: ' + error.message);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', loadMembers);
+</script>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - CareerTrack PMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+    
+    <!-- Stats Cards -->
+    <div class="row mb-4" id="statsCards">
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <p>Total Students</p>
+                <h3 id="totalStudents">-</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <p>Active Jobs</p>
+                <h3 id="activeJobs">-</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <p>Total Applications</p>
+                <h3 id="totalApps">-</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                <p>Placements</p>
+                <h3 id="placements">-</h3>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-clock"></i> Recent Job Postings</h5>
+                </div>
+                <div class="card-body">
+                    <div id="recentJobs">Loading...</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-user"></i> Your Profile</h5>
+                </div>
+                <div class="card-body" id="userProfile">
+                    Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadDashboard() {
+    const user = await checkAuth();
+    if (!user) {
+        window.location.href = '/login';
+        return;
+    }
+    
+    // Load stats
+    try {
+        const statsResponse = await apiCall('/analytics/placement-stats');
+        const stats = await statsResponse.json();
+        
+        document.getElementById('totalStudents').textContent = stats.total_students || 0;
+        document.getElementById('placements').textContent = stats.placed_students || 0;
+        
+        const jobStatsResponse = await apiCall('/analytics/job-stats');
+        const jobStats = await jobStatsResponse.json();
+        
+        document.getElementById('activeJobs').textContent = jobStats.active_jobs || 0;
+        document.getElementById('totalApps').textContent = jobStats.total_applications || 0;
+    } catch (error) {
+        console.error('Error loading stats:', error);
+    }
+    
+    // Load recent jobs
+    try {
+        const jobsResponse = await apiCall('/jobs/');
+        const jobs = await jobsResponse.json();
+        
+        const recentJobs = jobs.slice(0, 5);
+        document.getElementById('recentJobs').innerHTML = recentJobs.length > 0 ? `
+            <div class="list-group">
+                ${recentJobs.map(job => `
+                    <a href="/jobs" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${job.RoleTitle}</h6>
+                            <small>${job.PostDate}</small>
+                        </div>
+                        <p class="mb-1 text-muted">${job.CompanyName}</p>
+                        <small>Package: ₹${job.Package_LPA || 'N/A'} LPA</small>
+                    </a>
+                `).join('')}
+            </div>
+        ` : '<p class="text-muted">No recent jobs</p>';
+    } catch (error) {
+        document.getElementById('recentJobs').innerHTML = '<p class="text-danger">Error loading jobs</p>';
+    }
+    
+    // Load user profile
+    document.getElementById('userProfile').innerHTML = `
+        <p><strong>Username:</strong> ${user.username}</p>
+        <p><strong>Role:</strong> <span class="badge bg-primary">${user.role}</span></p>
+        <p><strong>Email:</strong> ${user.email}</p>
+    `;
+}
+
+document.addEventListener('DOMContentLoaded', loadDashboard);
+</script>
+{% endblock %}

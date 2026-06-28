@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Applications - CareerTrack PMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="fas fa-file-alt"></i> My Applications</h2>
+    
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Job Role</th>
+                            <th>Company</th>
+                            <th>Package (LPA)</th>
+                            <th>Applied Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="applicationsBody">
+                        <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadApplications() {
+    const user = await checkAuth();
+    if (!user) {
+        window.location.href = '/login';
+        return;
+    }
+    
+    try {
+        const response = await apiCall('/applications/');
+        const applications = await response.json();
+        
+        const tbody = document.getElementById('applicationsBody');
+        
+        if (applications.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">No applications found</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = applications.map(app => `
+            <tr>
+                <td><strong>${app.RoleTitle}</strong></td>
+                <td>${app.CompanyName}</td>
+                <td>₹${app.Package_LPA || 'N/A'}</td>
+                <td>${app.ApplyDate}</td>
+                <td>${getStatusBadge(app.Status)}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading applications:', error);
+        document.getElementById('applicationsBody').innerHTML = 
+            '<tr><td colspan="5" class="text-center text-danger">Error loading applications</td></tr>';
+    }
+}
+
+function getStatusBadge(status) {
+    const badges = {
+        'Applied': 'bg-primary',
+        'Shortlisted': 'bg-info',
+        'Selected': 'bg-success',
+        'Rejected': 'bg-danger',
+        'Withdrawn': 'bg-secondary'
+    };
+    
+    return `<span class="badge ${badges[status] || 'bg-secondary'}">${status}</span>`;
+}
+
+document.addEventListener('DOMContentLoaded', loadApplications);
+</script>
+{% endblock %}
