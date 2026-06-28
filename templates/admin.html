@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - CareerTrack PMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="fas fa-cog"></i> Admin Panel</h2>
+    
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#users">Users</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#audit">Audit Logs</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#database">Database Stats</button>
+        </li>
+    </ul>
+    
+    <div class="tab-content">
+        <!-- Users Tab -->
+        <div class="tab-pane fade show active" id="users">
+            <div class="card">
+                <div class="card-header">
+                    <h5>System Users</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Last Login</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersBody">
+                            <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Audit Logs Tab -->
+        <div class="tab-pane fade" id="audit">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Audit Logs</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>User</th>
+                                    <th>Action</th>
+                                    <th>Table</th>
+                                    <th>Authorized</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditBody">
+                                <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Database Stats Tab -->
+        <div class="tab-pane fade" id="database">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Database Statistics</h5>
+                </div>
+                <div class="card-body" id="dbStats">
+                    Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadUsers() {
+    try {
+        const response = await apiCall('/admin/users');
+        const users = await response.json();
+        
+        document.getElementById('usersBody').innerHTML = users.map(u => `
+            <tr>
+                <td>${u.Username}</td>
+                <td>${u.Email}</td>
+                <td><span class="badge bg-primary">${u.Role}</span></td>
+                <td>${u.LastLogin || 'Never'}</td>
+                <td>${u.IsActive ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-danger">Inactive</span>'}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        document.getElementById('usersBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading users</td></tr>';
+    }
+}
+
+async function loadAuditLogs() {
+    try {
+        const response = await apiCall('/admin/audit-logs?limit=50');
+        const logs = await response.json();
+        
+        document.getElementById('auditBody').innerHTML = logs.map(log => `
+            <tr>
+                <td><small>${log.Timestamp}</small></td>
+                <td>${log.Username || 'System'}</td>
+                <td>${log.Action}</td>
+                <td>${log.TableName || '-'}</td>
+                <td>${log.IsAuthorized ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-danger">No</span>'}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        document.getElementById('auditBody').innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading logs</td></tr>';
+    }
+}
+
+async function loadDbStats() {
+    try {
+        const response = await apiCall('/admin/database-stats');
+        const stats = await response.json();
+        
+        document.getElementById('dbStats').innerHTML = `
+            <p><strong>Total Tables:</strong> ${stats.total_tables}</p>
+            <p><strong>Database Size:</strong> ${stats.database_size_mb} MB</p>
+            <h5 class="mt-4">Table Row Counts:</h5>
+            <ul>
+                ${Object.entries(stats.table_counts).map(([table, count]) => 
+                    `<li>${table}: ${count} rows</li>`
+                ).join('')}
+            </ul>
+        `;
+    } catch (error) {
+        document.getElementById('dbStats').innerHTML = '<p class="text-danger">Error loading database stats</p>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const user = await checkAuth();
+    if (!user || user.role !== 'Admin') {
+        window.location.href = '/dashboard';
+        return;
+    }
+    
+    loadUsers();
+    loadAuditLogs();
+    loadDbStats();
+});
+</script>
+{% endblock %}

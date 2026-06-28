@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Login - CareerTrack PMS{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-5">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4">
+                        <i class="fas fa-lock"></i> Login
+                    </h2>
+                    
+                    <div id="alert" class="alert" style="display: none;"></div>
+                    
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-sign-in-alt"></i> Login
+                        </button>
+                    </form>
+                    
+                    <div class="mt-4 text-center">
+                        <p class="text-muted">Default Credentials:</p>
+                        <p><small><b>Admin:</b> admin / admin123</small></p>
+                        <p><small><b>Officer:</b> officer / officer123</small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const alert = document.getElementById('alert');
+    
+    console.log('Login attempt:', { username, password: '***' });
+    
+    // Validate inputs
+    if (!username || !password) {
+        alert.className = 'alert alert-danger';
+        alert.textContent = 'Please enter both username and password';
+        alert.style.display = 'block';
+        return;
+    }
+    
+    // Show loading
+    alert.className = 'alert alert-info';
+    alert.textContent = 'Logging in...';
+    alert.style.display = 'block';
+    
+    try {
+        const requestBody = { username, password };
+        console.log('Sending request to /api/auth/login');
+        console.log('Request body:', { username, password: '***' });
+        
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+        
+        console.log('Response status:', response.status);
+        
+        const data = await response.json();
+        console.log('Response data:', data);
+        
+        if (response.ok) {
+            localStorage.setItem('session_token', data.session_token);
+            alert.className = 'alert alert-success';
+            alert.textContent = 'Login successful! Redirecting...';
+            alert.style.display = 'block';
+            setTimeout(() => window.location.href = '/dashboard', 1000);
+        } else {
+            alert.className = 'alert alert-danger';
+            alert.textContent = data.error || 'Login failed';
+            alert.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        alert.className = 'alert alert-danger';
+        alert.textContent = 'Network error: ' + error.message;
+        alert.style.display = 'block';
+    }
+});
+
+// Auto-fill for testing (remove in production)
+window.addEventListener('load', () => {
+    document.getElementById('username').value = 'admin';
+    document.getElementById('password').value = 'admin123';
+});
+</script>
+{% endblock %}
