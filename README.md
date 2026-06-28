@@ -116,89 +116,40 @@ Module_B/
 
 ---
 
-## Quick Start
-
-### Option A — Real Flask Backend
+## ⚙️ Installation
 
 ```bash
-# 1. Install dependencies
+git clone https://github.com/EswaraValli/CareerTrack-DBMS.git
+
+cd CareerTrack-DBMS
+
 pip install -r requirements.txt
 
-# 2. Start the backend (Terminal 1)
 python app.py
-
-# 3. Run the benchmark suite (Terminal 2)
-python benchmark_runner.py
-
-# 4. Generate charts
-python results_visualizer.py
-```
-
-Default credentials: **admin / admin123**
-
----
-
-### Option B — Mock Server (no real backend needed)
-
-```bash
-# Terminal 1 — start mock server (CareerTrack schema, in-memory)
-python mock_server.py
-
-# Terminal 2 — run full benchmark
-python benchmark_runner.py
 ```
 
 ---
 
-## What benchmark_runner.py Tests
+## 📸 Screenshots
 
-| Scenario | ACID Property | What is verified |
-|----------|--------------|-----------------|
-| 1 — Race Condition | Isolation + Consistency | 50 threads apply to same job simultaneously; no duplicate applications |
-| 2 — Atomicity | Atomicity | FK-violating transactions (nonexistent job_id) must never commit |
-| 3 — Isolation | Isolation | Concurrent reads during CGPA writes; no dirty reads (CGPA out of [0,10]) |
-| 4 — Failure Simulation | Atomicity + Durability | Crash before commit, mid-transaction crash, checkpoint survival |
-| 5 — Stress Test | All | 200 requests at 50 concurrent threads; throughput & latency |
-| BONUS — SQL Benchmark | — | Direct query timing with EXPLAIN QUERY PLAN |
+> Screenshots and demo GIF will be added soon.
 
----
-
-## API Endpoints (Real Backend)
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/auth/login` | Login | No |
-| POST | `/api/auth/logout` | Logout | Yes |
-| GET | `/api/students/` | List all students | Yes |
-| GET | `/api/students/<id>` | Single student | Yes |
-| POST | `/api/students/` | Create student | Admin |
-| PUT | `/api/students/<id>` | Update student | Admin/Self |
-| GET | `/api/jobs/` | List all jobs | Yes |
-| GET | `/api/jobs/eligible` | Jobs eligible for current student | Student |
-| POST | `/api/applications/` | Apply for a job | Student |
-| GET | `/api/applications/` | List applications | Yes |
-| PUT | `/api/applications/<id>/status` | Update status | Admin/Officer |
-| GET | `/api/analytics/placement-stats` | Placement statistics | Yes |
-| POST | `/debug/inject_failure` | Inject crash (mock/debug) | No |
-| POST | `/debug/checkpoint` | Flush WAL / clear injection | No |
-| GET | `/debug/verify_consistency` | Cross-table consistency check | No |
+- Login Page
+- Dashboard
+- Student Management
+- Analytics Dashboard
+- Benchmark Results
 
 ---
 
-## Locust (Browser UI Load Test)
+## 🚀 Future Enhancements
 
-```bash
-locust -f locust_tests/locustfile.py --host http://localhost:5000
-# Open: http://localhost:8089
-# Set: users=50, spawn rate=10, duration=60s
-```
+- PostgreSQL Support
+- Docker Deployment
+- JWT Authentication
+- CI/CD Pipeline
+- Distributed Transactions
+- Redis Caching
+- Cloud Deployment
 
 ---
-
-## Bug Fixes in This Version
-
-| File | Fix |
-|------|-----|
-| `audit.py` | `timedelta` was imported inside functions only — moved to top-level import |
-| `mock_server.py` | Completely rewritten to use CareerTrack schema (Students/Jobs/Applications) instead of generic Users/Products/Orders |
-| `benchmark_runner.py` | All endpoints updated to `/api/students/`, `/api/jobs/`, `/api/applications/`; added session auth header; added SQL benchmark |
